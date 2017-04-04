@@ -21,6 +21,9 @@
 #include <FirebaseArduino.h>
 
 // Set these to run example.
+// explanation of this setup can be found at 
+// https://github.com/firebase/firebase-arduino/blob/master/examples/FirebaseDemo_ESP8266/README.md
+// under configuration 
 #define FIREBASE_HOST "myfirstmapboxapp-11599.firebaseio.com"
 #define FIREBASE_AUTH "jdi5ilRiQjD1QkT2zENBBOpex53NhqKBPyCNkMKO"
 #define WIFI_SSID "ATT7LyA4Ef"
@@ -77,7 +80,9 @@ void loop() {
 }
 
 float createSteps(float a, float b, int number_of_steps){
- 
+ /*
+  * calculates the proper incriment between to vectors
+  */
   
   float delta = b - a;
   float incriment = delta/number_of_steps;
@@ -86,6 +91,10 @@ float createSteps(float a, float b, int number_of_steps){
 }
 
 void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, int number_of_steps){
+  /*
+   * simulates a drone transmiting its locaion to our database by taking two sets of corordinates
+   * and filling in the path between them with intermediate points.  
+   */
 
   float lat_step = createSteps(start_lat, stop_lat, number_of_steps);
   float lng_step = createSteps(start_lng, stop_lng, number_of_steps);
@@ -102,6 +111,7 @@ void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, i
      Serial.println(each_lat,6);
      Serial.print("Lng: ");
      Serial.println(each_lng,6);
+     //TODO change this to transmit both points simultaniously
      Firebase.setFloat("GeoFire/Rouge One/l/0", each_lat);
      Firebase.setFloat("GeoFire/Rouge One/l/1", each_lng);
      if (Firebase.success()){
@@ -117,6 +127,12 @@ void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, i
 }
 
 bool isThisPointInANoFlyZone(double lat, double lng){
+  /*
+   * this will determine if at drone has entered a nofly zone
+   * it will get the no flyzones from firebase and the compare the 
+   * current point to each of the nofly zone polygons and determine 
+   * if the point is inside
+   */
 
   FirebaseObject noFlyZones = Firebase.get("NoFlyZones");
   if (Firebase.success()){
@@ -125,7 +141,7 @@ bool isThisPointInANoFlyZone(double lat, double lng){
       Serial.println(data);
      }
      if (Firebase.failed()){
-      Serial.print("get noflyzones failed:");
+      Serial.print("get noflyzonse failed:");
       Serial.println(Firebase.error());
      }
    

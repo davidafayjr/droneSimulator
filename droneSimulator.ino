@@ -46,13 +46,15 @@ void loop() {
   // put your main code here, to run repeatedly:
   float inital_lat = Firebase.getFloat("GeoFire/Rouge One/l/0");
   if (Firebase.failed()){
-      Serial.print("setting location failed:");
+      Serial.print("get lat failed:");
       Serial.println(Firebase.error());
+      return;
      }
   float inital_lng = Firebase.getFloat("GeoFire/Rouge One/l/1");
   if (Firebase.failed()){
-      Serial.print("setting location failed:");
+      Serial.print("get lng failed:");
       Serial.println(Firebase.error());
+      return;
      }
   float lat_a = 39.70036;
   float lng_a = -83.74279;
@@ -123,7 +125,7 @@ bool isThisPointInANoFlyZone(double lat, double lng){
       Serial.println(data);
      }
      if (Firebase.failed()){
-      Serial.print("setting location failed:");
+      Serial.print("get noflyzones failed:");
       Serial.println(Firebase.error());
      }
    

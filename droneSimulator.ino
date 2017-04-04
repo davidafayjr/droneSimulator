@@ -71,7 +71,6 @@ void loop() {
   
   delay(6000);
 
-  
 
 }
 
@@ -96,15 +95,12 @@ void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, i
   for (i = 0; i<number_of_steps; i = i+1){
      each_lat = each_lat + lat_step;
      each_lng = each_lng + lng_step;
-//     String each_lat_srt = String(each_lat, 10);
-//     String each_lng_srt = String(each_lng, 10);
+
      Serial.print("Lat: ");
      Serial.println(each_lat,6);
      Serial.print("Lng: ");
      Serial.println(each_lng,6);
      Firebase.setFloat("GeoFire/Rouge One/l/0", each_lat);
-     //Firebase.setString("GeoFire/Rouge One/l/0", each_lat_srt);
-     //Firebase.setString("GeoFire/Rouge One/l/1", each_lng_srt);
      Firebase.setFloat("GeoFire/Rouge One/l/1", each_lng);
      if (Firebase.success()){
       Serial.println("Successfully updated Location!");
@@ -113,8 +109,25 @@ void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, i
       Serial.print("setting location failed:");
       Serial.println(Firebase.error());
      }
+     bool inNFZ = isThisPointInANoFlyZone(each_lat, each_lng);
      delay(100); 
   }
+}
+
+bool isThisPointInANoFlyZone(double lat, double lng){
+
+  FirebaseObject noFlyZones = Firebase.get("NoFlyZones");
+  if (Firebase.success()){
+      Serial.println("Successfully got no fly zones!");
+      String data = noFlyZones.getString("zone1");
+      Serial.println(data);
+     }
+     if (Firebase.failed()){
+      Serial.print("setting location failed:");
+      Serial.println(Firebase.error());
+     }
+   
+  return false;
 }
 
 

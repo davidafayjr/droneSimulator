@@ -106,22 +106,23 @@ void runLeg(float start_lat, float start_lng, float stop_lat,  float stop_lng, i
   for (i = 0; i<number_of_steps; i = i+1){
      each_lat = each_lat + lat_step;
      each_lng = each_lng + lng_step;
-
-     Serial.print("Lat: ");
-     Serial.println(each_lat,6);
-     Serial.print("Lng: ");
-     Serial.println(each_lng,6);
      //TODO change this to transmit both points simultaniously
      Firebase.setFloat("GeoFire/Rouge One/l/0", each_lat);
      Firebase.setFloat("GeoFire/Rouge One/l/1", each_lng);
      if (Firebase.success()){
-      Serial.println("Successfully updated Location!");
+      // Serial.println("Successfully updated Location!");
+      bool inNFZ = isThisPointInANoFlyZone(each_lat, each_lng);
+      if(inNFZ){
+        Serial.println("inside nofly zone");
+      }else{
+        Serial.println("not inside nofly zone");
+      }
      }
      if (Firebase.failed()){
       Serial.print("setting location failed:");
       Serial.println(Firebase.error());
      }
-     bool inNFZ = isThisPointInANoFlyZone(each_lat, each_lng);
+     
      delay(100); 
   }
 }
@@ -135,17 +136,75 @@ bool isThisPointInANoFlyZone(double lat, double lng){
    */
 
   FirebaseObject noFlyZones = Firebase.get("NoFlyZones");
-  if (Firebase.success()){
-      Serial.println("Successfully got no fly zones!");
-      String data = noFlyZones.getString("zone1");
-      Serial.println(data);
+    
+    if (Firebase.success()){
+      int num_o_zones = noFlyZones.getInt("numberOfZones");
+      char space = 32;
+      
+      for(int z=0; z<num_o_zones; z++){
+        char zone_num = (z+49);
+        String zone = "zone_";
+        String zone_key = zone+zone_num;
+        String polygonlist = noFlyZones.getString(zone_key);
+        if(pointInsidePolygon(polygonlist, lat, lng)){
+          return true;
+        }
+       }
      }
      if (Firebase.failed()){
       Serial.print("get noflyzonse failed:");
       Serial.println(Firebase.error());
      }
-   
+  
   return false;
+}
+
+bool pointInsidePolygon(String polygonlist, float lat, float lng){
+
+  int num_o_spaces = countSpaces(polygonlist);
+  char space = 32;
+  bool inside = false;
+  
+        
+  for(int i=0; i <= num_o_spaces; i++){
+    String current_point = getValue(polygonlist, space, i);
+    String p1_lat_str = getValue(current_point, ',', 1);
+    float p1_lat = p1_lat_str.toFloat();
+    
+    String p1_lng_str = getValue(current_point, ',', 0);
+    float p1_lng = p1_lng_str.toFloat();
+    
+    String next_point = getValue(polygonlist, space, (i+1)%num_o_spaces);
+    String p2_lat_str = getValue(next_point, ',', 1);
+    float p2_lat = p2_lat_str.toFloat();
+    
+    String p2_lng_str = getValue(next_point, ',', 0);
+    float p2_lng = p2_lng_str.toFloat();
+   
+    
+    inside = lineIntersect(inside, lng, lat, p1_lng, p1_lat, p2_lng, p2_lat);
+  }
+  return inside;       
+}
+
+bool lineIntersect(bool inside, const float x, const float y, const float p1_x, const float p1_y, const float p2_x, const float p2_y){
+  float min_y = std::min(p1_y, p2_y);
+  
+  if (y > min_y){
+    float max_y = std::max(p1_y, p2_y);
+    if (y <= max_y){
+      float max_x = std::max(p1_x, p2_x);
+      if(x <= max_x){
+        if(p1_y != p2_y){
+          float xinters = (y-p1_y)*(p2_x-p1_x)/(p2_y-p1_y)+ p1_x;
+          if((p1_x==p2_x)or(x<=xinters)){
+            inside = !inside; 
+          }
+        }
+      }
+    }
+  }
+  return inside;
 }
 
 String getValue(String data, char separator, int index)
@@ -165,5 +224,20 @@ String getValue(String data, char separator, int index)
   return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
+int countSpaces(String string){
+
+  int number_of_spaces = 0;
+  int i;
+  char space = 32;
+  
+  for (i = 0; i < string.length(); i++){
+    char this_char = string[i];
+//    Serial.println(this_char);
+    if (this_char == space){
+      number_of_spaces++;
+    }
+  }
+  return number_of_spaces;
+}
 
 
